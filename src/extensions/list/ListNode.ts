@@ -35,6 +35,19 @@ export const ListNode = TiptapNode.create<ListOptions>({
           };
         },
       },
+      // 列表序号
+      "data-number": {
+        default: 1,
+        parseHTML: (element: HTMLElement) => {
+          const value = element.getAttribute("data-number");
+          return value ? parseInt(value) : 1;
+        },
+        renderHTML: (attributes: Record<string, any>) => {
+          return {
+            "data-number": attributes["data-number"],
+          };
+        },
+      },
       // 列表序号内容
       "data-number-content": {
         default: "1.",
@@ -82,16 +95,33 @@ export const ListNode = TiptapNode.create<ListOptions>({
     return {
       formatNumberContent:
         () =>
-        ({ editor, commands, tr, chain }) => {
+        ({ editor, state, tr, dispatch }) => {
+
           const customListNodes: { node: Node; pos: number }[] = [];
 
-          editor.
+          // 收集所有customList节点
+          editor.state.doc.descendants((node, pos) => {
+            if (node.type.name === "customList") {
+              customListNodes.push({ node, pos });
+            }
+          });
+
+          if (customListNodes.length === 0) return false;
+
           // 按层级分组统计序号
           const indentCounters: { [key: number]: number } = {};
 
+          console.log("customListNodes", customListNodes);
           customListNodes.forEach(({ node, pos }, index) => {
-            const { 'data-indent': indent, 'data-list-style-type': listStyleType } = node.attrs;
+            const { "data-indent": indent, "data-list-style-type": listStyleType } = node.attrs;
             const currentIndent = parseInt(indent) || 1;
+
+            // 重置更深层级的计数器
+            for (let level in indentCounters) {
+              if (parseInt(level) > currentIndent) {
+                delete indentCounters[level];
+              }
+            }
 
             // 初始化或递增当前层级的计数器
             if (!indentCounters[currentIndent]) {
@@ -100,23 +130,23 @@ export const ListNode = TiptapNode.create<ListOptions>({
               indentCounters[currentIndent]++;
             }
 
-            console.log(indentCounters)
+            console.log(indentCounters);
             // 构建当前项的完整序号内容（用于多层级显示）
-            let fullNumberContent = '';
+            let fullNumberContent = "";
             for (let i = 1; i <= currentIndent; i++) {
               if (indentCounters[i]) {
                 if (i === 1) {
                   // 第一层级直接使用格式化函数
                   fullNumberContent = complexFormat(
-                    listStyleType || 'decimal',
+                    listStyleType || "decimal",
                     i,
                     indentCounters[i],
-                    ''
+                    ""
                   );
                 } else {
                   // 更深层级需要传入上级内容
                   fullNumberContent = complexFormat(
-                    listStyleType || 'decimal',
+                    listStyleType || "decimal",
                     i,
                     indentCounters[i],
                     fullNumberContent
@@ -128,13 +158,16 @@ export const ListNode = TiptapNode.create<ListOptions>({
             // 更新节点属性
             const newAttrs = {
               ...node.attrs,
-              'data-number': indentCounters[currentIndent],
-              'data-number-content': fullNumberContent
+              "data-number": indentCounters[currentIndent],
+              "data-number-content": fullNumberContent,
             };
 
-            tr.setNodeMarkup(pos, node.type, newAttrs);
+            tr.setNodeMarkup(pos, undefined, newAttrs);
           });
 
+          if (dispatch) {
+            dispatch(tr);
+          }
           return true;
         },
       toggleCustomList:
@@ -172,7 +205,7 @@ export const ListNode = TiptapNode.create<ListOptions>({
         },
       splitCustomList:
         () =>
-        ({ state, commands, tr, chain }) => {
+        ({ state, commands, tr, chain, dispatch }) => {
           const { selection } = state;
           const { from, to } = selection;
 
@@ -212,11 +245,8 @@ export const ListNode = TiptapNode.create<ListOptions>({
             chain()
               .insertContentAt(insertPos, newCustomList)
               .setTextSelection(insertPos + 2) // 定位到新列表的第一个段落
+              .formatNumberContent()
               .run();
-
-            setTimeout(() => {
-              commands.formatNumberContent();
-            }, 1000);
 
             return true;
           }

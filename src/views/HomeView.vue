@@ -126,6 +126,20 @@
             />
           </svg>
         </button>
+
+        <button
+          @click="formatListNumbers"
+          class="toolbar-button"
+          title="更新列表序号"
+          style="background-color: #e3f2fd;"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path
+              fill="currentColor"
+              d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"
+            />
+          </svg>
+        </button>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -367,21 +381,21 @@ const editor = useEditor({
   },
 
   onTransaction({ editor, transaction }) {
-    // console.log('🔄 [Tiptap Lifecycle] onTransaction - 编辑器状态改变', {
-    //   editor,
-    //   transaction,
-    //   docChanged: transaction.docChanged,
-    //   selectionSet: transaction.selectionSet
-    // });
+    console.log('🔄 [Tiptap Lifecycle] onTransaction - 编辑器状态改变', {
+      editor,
+      transaction,
+      docChanged: transaction.docChanged,
+      selectionSet: transaction.selectionSet
+    });
   },
 
-  onFocus({ editor, event }) {
-    console.log('🎯 [Tiptap Lifecycle] onFocus - 编辑器获得焦点', { editor, event });
-  },
+  // onFocus({ editor, event }) {
+  //   console.log('🎯 [Tiptap Lifecycle] onFocus - 编辑器获得焦点', { editor, event });
+  // },
 
-  onBlur({ editor, event }) {
-    console.log('😴 [Tiptap Lifecycle] onBlur - 编辑器失去焦点', { editor, event });
-  },
+  // onBlur({ editor, event }) {
+  //   console.log('😴 [Tiptap Lifecycle] onBlur - 编辑器失去焦点', { editor, event });
+  // },
 
   onDestroy() {
     console.log('💥 [Tiptap Lifecycle] onDestroy - 编辑器实例被销毁');
@@ -691,6 +705,14 @@ const closeListFormatModal = () => {
   listFormatModalVisible.value = false;
 };
 
+const formatListNumbers = () => {
+  if (!editor.value) return;
+
+  console.log('🔄 手动触发 formatNumberContent 命令');
+  const result = editor.value.commands.formatNumberContent();
+  console.log('✅ formatNumberContent 命令执行结果:', result);
+};
+
 const confirmListFormat = (data: {
   formatType: string;
   customFormat?: string;
@@ -973,16 +995,6 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-.editor-content :deep(.ProseMirror ul) {
-  padding-left: 24px;
-  margin: 16px 0;
-}
-
-.editor-content :deep(.ProseMirror ol) {
-  padding-left: 24px;
-  margin: 16px 0;
-}
-
 .editor-content :deep(.ProseMirror li) {
   margin: 4px 0;
 }
@@ -1176,34 +1188,30 @@ onMounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 特定列表类型的样式调整 */
-.editor-content :deep(ol[data-list-style-type="chinese-colon"]::before),
-.editor-content :deep(ol[data-list-style-type="chinese-pause"]::before) {
-  min-width: 4em;
-}
-
-.editor-content :deep(ol[data-list-style-type="chinese-colon"] li),
-.editor-content :deep(ol[data-list-style-type="chinese-pause"] li) {
-  padding-left: 4em;
-}
-
-/* FTS列表类名样式 */
-.editor-content :deep(.fts-list-heading3) {
-  font-size: inherit;
-  line-height: inherit;
-}
-
-.editor-content :deep(.fts-list-heading3 h3) {
-  margin: 0;
-  padding: 0;
-  font-size: 1.2em;
-  font-weight: 600;
-}
-
-.editor-content :deep(.fts-list-heading3 p) {
+.editor-content :deep(.ProseMirror ul) {
   margin: 0;
   padding: 0;
 }
+
+.editor-content :deep(.ProseMirror ol) {
+  margin: 0;
+  padding: 0;
+}
+
+.editor-content :deep(.ProseMirror ol::before) {
+  content: attr(data-number-content);
+  padding-right: 0.5em;
+}
+
+.editor-content :deep(.ProseMirror ol li) {
+  list-style: none;
+  display: inline;
+}
+
+.editor-content :deep(.ProseMirror ol li p,h3) {
+  display: inline;
+}
+
 
 /* 禁用状态的工具栏按钮 */
 .toolbar-button:disabled {
