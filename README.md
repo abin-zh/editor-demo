@@ -1,2 +1,6 @@
-# editor-demo
-tiptap editor demo
+# Tiptap编辑器实验
+
+## todo
+
+[x] 基础功能
+[ ] 列表(支持多格式、多层级编号)
